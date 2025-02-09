@@ -1,4 +1,18 @@
 #requires -version 7
+<#
+    .SYNOPSIS
+    Extracts all subscriptions of all Event Grid system topics. Show subscriptions using webhooks towards non-usual destinations (*.datafactory.azure.com or *.storageav.azure.com)
+
+    .DESCRIPTION
+    This script extracts a list of all subscriptions of all Event Grid system topics in all subscriptions. It shows subscriptions using webhooks towards non-usual destinations (*.datafactory.azure.com or *.storageav.azure.com)
+    Those destinations should be checked to ensure that they can support TLS 1.2 (this part is not automated in this script)
+
+    .EXAMPLE
+    .\Get-EventGridSubscriptions.ps1
+#>
+[CmdletBinding()]
+param()
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -18,9 +32,9 @@ resources
 | where type =~ 'microsoft.eventgrid/systemTopics'
 | extend source = properties.source
 | extend topicType = toupper(properties.topicType)
-| join kind=inner (    resourcecontainers    
-| where type == 'microsoft.resources/subscriptions'    
-| project subscriptionName=name, subscriptionId = subscriptionId) on $left.subscriptionId == $right.subscriptionId
+| join kind=inner (resourcecontainers
+| where type == 'microsoft.resources/subscriptions'
+| project subscriptionName=name, subscriptionId = subscriptionId) on $left.subscriptionId == $right.subscriptionId
 | order by subscriptionName, resourceGroup
 | project id, subscriptionName,resourceGroup,location, name, topicType, source
 '@
@@ -41,9 +55,9 @@ while ($true) {
     else {
       $graphResult = Search-AzGraph -Query $kqlQuery -First $batchSize
     }
-  
+
     $kqlResult += $graphResult.data
-  
+
     if ($graphResult.data.Count -lt $batchSize) {
       break;
     }
